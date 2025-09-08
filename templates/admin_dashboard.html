@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/admin_dashboard.css') }}"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(135deg, #a5a58d, #b7b7a4);
+        min-height: 100vh;
+        display: flex;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(
+            circle at 20% 80%,
+            rgba(120, 119, 198, 0.3) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 80% 20%,
+            rgba(255, 119, 198, 0.3) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 40% 40%,
+            rgba(120, 219, 255, 0.2) 0%,
+            transparent 50%
+          );
+        z-index: -1;
+        animation: backgroundShift 20s ease-in-out infinite;
+      }
+
+      @keyframes backgroundShift {
+        0%,
+        100% {
+          transform: translateX(0) translateY(0);
+        }
+        25% {
+          transform: translateX(-5px) translateY(-10px);
+        }
+        50% {
+          transform: translateX(5px) translateY(5px);
+        }
+        75% {
+          transform: translateX(-3px) translateY(8px);
+        }
+      }
+
+      .sidebar {
+        width: 300px;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.1) 0%,
+          rgba(255, 255, 255, 0.05) 100%
+        );
+        backdrop-filter: blur(20px);
+        border-right: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 40px 25px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow-y: auto;
+        z-index: 10;
+      }
+
+      .sidebar::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #a5a58d, #b7b7a4, #8a8d7a);
+        border-radius: 0 0 4px 4px;
+      }
+
+      .sidebar h2 {
+        margin-bottom: 40px;
+        font-size: 28px;
+        text-align: center;
+        font-weight: 600;
+        letter-spacing: 1px;
+        color: #fff;
+        text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        position: relative;
+      }
+
+      .sidebar h2::after {
+        content: "";
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 3px;
+        background: linear-gradient(90deg, #a5a58d, #b7b7a4);
+        border-radius: 2px;
+      }
+
+      .nav-option {
+        background: rgba(255, 255, 255, 0.08);
+        color: white;
+        padding: 18px 25px;
+        margin: 15px 0;
+        border-radius: 16px;
+        text-decoration: none;
+        display: block;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(15px);
+        font-weight: 500;
+        letter-spacing: 0.5px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .nav-option::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.1),
+          transparent
+        );
+        transition: left 0.6s;
+      }
+
+      .nav-option:hover::before {
+        left: 100%;
+      }
+
+      .nav-option:hover {
+        background: rgba(255, 255, 255, 0.15);
+        transform: translateX(8px) translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
+      .nav-option:active {
+        transform: translateX(4px) translateY(0);
+      }
+
+      .nav-option a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .main-content {
+        flex: 1;
+        padding: 50px;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(20px);
+        overflow-y: auto;
+        position: relative;
+      }
+
+      .main-content::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(
+            circle at 10% 20%,
+            rgba(255, 255, 255, 0.1) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 90% 80%,
+            rgba(255, 255, 255, 0.05) 0%,
+            transparent 50%
+          );
+        pointer-events: none;
+      }
+
+      h1 {
+        color: white;
+        font-size: 36px;
+        margin-bottom: 40px;
+        text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        font-weight: 600;
+        background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        position: relative;
+        z-index: 1;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(20px);
+        border-radius: 20px;
+        padding: 35px;
+        margin-bottom: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.4),
+          transparent
+        );
+      }
+
+      .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
+      .card h3 {
+        color: white;
+        margin-bottom: 25px;
+        font-size: 24px;
+        font-weight: 600;
+        background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        position: relative;
+      }
+
+      .card h3::after {
+        content: "";
+        position: absolute;
+        bottom: -8px;
+        left: 0;
+        width: 40px;
+        height: 2px;
+        background: linear-gradient(90deg, #a5a58d, #b7b7a4);
+        border-radius: 1px;
+      }
+
+      /* Responsive design */
+      @media (max-width: 768px) {
+        body {
+          flex-direction: column;
+        }
+
+        .sidebar {
+          width: 100%;
+          height: auto;
+          padding: 20px;
+        }
+
+        .main-content {
+          padding: 20px;
+        }
+
+        .sidebar h2 {
+          font-size: 22px;
+        }
+      }
+
+      /* Scrollbar styling */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.5);
+      }
+
+      /* Button styles */
+      .btn {
+        background: linear-gradient(135deg, #a5a58d 0%, #b7b7a4 100%);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      }
+
+      .btn-delete {
+        background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+
+      .btn-delete:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(211, 47, 47, 0.4);
+      }
+
+      /* Table styles */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        color: white;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(15px);
+        border-radius: 16px;
+        overflow: hidden;
+        margin-top: 25px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      th,
+      td {
+        padding: 18px 20px;
+        border: none;
+        text-align: left;
+        position: relative;
+      }
+
+      th {
+        background: linear-gradient(
+          135deg,
+          rgba(165, 165, 141, 0.8) 0%,
+          rgba(183, 183, 164, 0.8) 100%
+        );
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 1.5px;
+        color: white;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      tr {
+        transition: all 0.3s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      tr:nth-child(even) {
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      tr:hover {
+        background: rgba(255, 255, 255, 0.08);
+        transform: scale(1.01);
+      }
+
+      tr:last-child {
+        border-bottom: none;
+      }
+
+      /* Form styles */
+      .file-label {
+        color: white;
+        font-weight: 600;
+        margin-bottom: 15px;
+        display: block;
+        font-size: 16px;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      input[type="file"] {
+        background: rgba(255, 255, 255, 0.08);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 20px;
+        width: 100%;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+      }
+
+      input[type="file"]:focus {
+        outline: none;
+        border-color: rgba(165, 165, 141, 0.6);
+        box-shadow: 0 0 0 3px rgba(165, 165, 141, 0.2);
+      }
+
+      input[type="file"]::file-selector-button {
+        background: linear-gradient(135deg, #a5a58d 0%, #b7b7a4 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-right: 15px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      input[type="file"]::file-selector-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      }
+
+      /* Enhanced form controls */
+      select {
+        background: rgba(255, 255, 255, 0.08);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        padding: 15px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 12px center;
+        background-repeat: no-repeat;
+        background-size: 16px;
+        padding-right: 45px;
+      }
+
+      select:focus {
+        outline: none;
+        border-color: rgba(165, 165, 141, 0.6);
+        box-shadow: 0 0 0 3px rgba(165, 165, 141, 0.2);
+      }
+
+      select option {
+        background: #2d3748;
+        color: white;
+        padding: 10px;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        height: 6px;
+        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.2);
+        outline: none;
+        -webkit-appearance: none;
+        appearance: none;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #a5a58d 0%, #b7b7a4 100%);
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
+      }
+
+      input[type="range"]::-webkit-slider-thumb:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+      }
+
+      input[type="range"]::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #a5a58d 0%, #b7b7a4 100%);
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+
+      /* Flash messages */
+      .flash-messages {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+      }
+
+      .flash-message {
+        padding: 15px 20px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        animation: slideIn 0.3s ease-out;
+      }
+
+      .flash-success {
+        background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+      }
+
+      .flash-danger {
+        background: linear-gradient(135deg, #f44336 0%, #c62828 100%);
+      }
+
+      .flash-warning {
+        background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+      }
+
+      .flash-info {
+        background: linear-gradient(135deg, #2196f3 0%, #1565c0 100%);
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      /* Additional animations and effects */
+      .card {
+        animation: fadeInUp 0.6s ease-out;
+      }
+
+      .card:nth-child(1) {
+        animation-delay: 0.1s;
+      }
+      .card:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .card:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Floating particles effect */
+      .main-content::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: radial-gradient(
+            2px 2px at 20px 30px,
+            rgba(255, 255, 255, 0.3),
+            transparent
+          ),
+          radial-gradient(
+            2px 2px at 40px 70px,
+            rgba(255, 255, 255, 0.2),
+            transparent
+          ),
+          radial-gradient(
+            1px 1px at 90px 40px,
+            rgba(255, 255, 255, 0.4),
+            transparent
+          ),
+          radial-gradient(
+            1px 1px at 130px 80px,
+            rgba(255, 255, 255, 0.3),
+            transparent
+          ),
+          radial-gradient(
+            2px 2px at 160px 30px,
+            rgba(255, 255, 255, 0.2),
+            transparent
+          );
+        background-repeat: repeat;
+        background-size: 200px 100px;
+        animation: float 20s linear infinite;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      @keyframes float {
+        0% {
+          transform: translateY(0px) rotate(0deg);
+        }
+        50% {
+          transform: translateY(-20px) rotate(180deg);
+        }
+        100% {
+          transform: translateY(0px) rotate(360deg);
+        }
+      }
+
+      /* Enhanced scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #a5a58d, #b7b7a4);
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #b7b7a4, #a5a58d);
+      }
+
+      /* Loading animation for buttons */
+      .btn.loading {
+        position: relative;
+        color: transparent;
+      }
+
+      .btn.loading::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 20px;
+        height: 20px;
+        border: 2px solid transparent;
+        border-top: 2px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: translate(-50%, -50%) rotate(0deg);
+        }
+        100% {
+          transform: translate(-50%, -50%) rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <h2>Admin Dashboard</h2>
+
+      <div class="nav-option">
+        <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+      </div>
+      <hr style="margin: 20px 0; border: 0; height: 1px; background: #ccc" />
+
+      <div class="nav-option">
+        <a href="{{ url_for('view_users') }}">View Users</a>
+      </div>
+      <hr style="margin: 20px 0; border: 0; height: 1px; background: #ccc" />
+
+      <div class="nav-option">
+        <a href="{{ url_for('view_summary') }}">View Summary</a>
+      </div>
+      <hr style="margin: 20px 0; border: 0; height: 1px; background: #ccc" />
+
+      <div class="nav-option">
+        <a href="{{ url_for('view_sentiment_score') }}">View Sentiment Score</a>
+      </div>
+      <hr style="margin: 20px 0; border: 0; height: 1px; background: #ccc" />
+
+      <div class="nav-option">
+        <a href="{{ url_for('view_comments') }}">View Comments</a>
+      </div>
+      <hr style="margin: 20px 0; border: 0; height: 1px; background: #ccc" />
+
+      <div class="nav-option">
+        <a href="{{ url_for('logout') }}">Log Out</a>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %}
+      <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="flash-message flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %} {% endwith %}
+      <section id="monitor-users" class="card">
+        <h1>Monitor Users</h1>
+        <table>
+          <thead>
+            <tr>
+              <th>User ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Created At</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="users-table-body">
+            <!-- Users will be populated here -->
+          </tbody>
+        </table>
+      </section>
+
+      <script>
+        async function fetchUsers() {
+          try {
+            const response = await fetch("{{ url_for('monitor_users') }}");
+            if (!response.ok) {
+              throw new Error("Network response was not ok");
+            }
+            const users = await response.json();
+            const tbody = document.getElementById("users-table-body");
+            tbody.innerHTML = "";
+
+            users.forEach((user) => {
+              const tr = document.createElement("tr");
+
+              tr.innerHTML = `
+            <td>${user.user_id}</td>
+            <td>${user.name}</td>
+            <td>${user.email}</td>
+            <td>${new Date(user.created_at).toLocaleString()}</td>
+            <td>
+              <form method="POST" action="{{ url_for('monitor_users') }}" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                <input type="hidden" name="user_id" value="${user.user_id}" />
+                <button type="submit" class="btn-delete">Delete</button>
+              </form>
+            </td>
+          `;
+
+              tbody.appendChild(tr);
+            });
+          } catch (error) {
+            console.error("Failed to fetch users:", error);
+          }
+        }
+
+        // Fetch users when the page loads
+        window.onload = fetchUsers;
+
+        // Auto-hide flash messages after 5 seconds
+        setTimeout(function () {
+          const flashMessages = document.querySelectorAll(".flash-message");
+          flashMessages.forEach(function (message) {
+            message.style.animation = "slideOut 0.3s ease-in forwards";
+            setTimeout(function () {
+              message.remove();
+            }, 300);
+          });
+        }, 5000);
+
+        // Add slideOut animation
+        const style = document.createElement("style");
+        style.textContent = `
+      @keyframes slideOut {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+      }
+    `;
+        document.head.appendChild(style);
+
+        // Enhanced UI interactions
+        document.addEventListener("DOMContentLoaded", function () {
+          // Add loading states to buttons
+          const buttons = document.querySelectorAll(".btn");
+          buttons.forEach((button) => {
+            button.addEventListener("click", function (e) {
+              if (this.type === "submit") {
+                this.classList.add("loading");
+                setTimeout(() => {
+                  this.classList.remove("loading");
+                }, 2000);
+              }
+            });
+          });
+
+          // Add ripple effect to cards
+          const cards = document.querySelectorAll(".card");
+          cards.forEach((card) => {
+            card.addEventListener("click", function (e) {
+              const ripple = document.createElement("span");
+              const rect = this.getBoundingClientRect();
+              const size = Math.max(rect.width, rect.height);
+              const x = e.clientX - rect.left - size / 2;
+              const y = e.clientY - rect.top - size / 2;
+
+              ripple.style.width = ripple.style.height = size + "px";
+              ripple.style.left = x + "px";
+              ripple.style.top = y + "px";
+              ripple.classList.add("ripple");
+
+              this.appendChild(ripple);
+
+              setTimeout(() => {
+                ripple.remove();
+              }, 600);
+            });
+          });
+
+          // Add typing effect to main heading
+          const heading = document.querySelector("h1");
+          if (heading) {
+            const text = heading.textContent;
+            heading.textContent = "";
+            let i = 0;
+            const typeWriter = () => {
+              if (i < text.length) {
+                heading.textContent += text.charAt(i);
+                i++;
+                setTimeout(typeWriter, 100);
+              }
+            };
+            setTimeout(typeWriter, 500);
+          }
+        });
+
+        // Add ripple effect CSS
+        const rippleStyle = document.createElement("style");
+        rippleStyle.textContent = `
+      .ripple {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.3);
+        transform: scale(0);
+        animation: ripple-animation 0.6s linear;
+        pointer-events: none;
+      }
+      
+      @keyframes ripple-animation {
+        to {
+          transform: scale(4);
+          opacity: 0;
+        }
+      }
+    `;
+        document.head.appendChild(rippleStyle);
+      </script>
+
+      <section id="add-discussion" class="card">
+        <h1>Add Discussion</h1>
+        <form
+          id="upload-csv-form"
+          method="POST"
+          action="{{ url_for('add_discussion') }}"
+          enctype="multipart/form-data"
+        >
+          <label for="csv-file" class="file-label"
+            >Upload CSV (username, comment, discussion_topic):</label
+          >
+          <input
+            type="file"
+            id="csv-file"
+            name="csv_file"
+            accept=".csv"
+            required
+          />
+          <button type="submit" class="btn">Upload</button>
+        </form>
+      </section>
+
+      <section id="generate-summary" class="card">
+        <h1>Generate Summary</h1>
+        <p>Generate summary from uploaded discussion data.</p>
+        <form method="POST" action="{{ url_for('generate_summary') }}">
+          <button type="submit" class="btn">Generate Summary</button>
+        </form>
+      </section>
+
+      <section id="word-cloud" class="card">
+        <h1>Word Cloud</h1>
+        <p>Generate word cloud from discussion summaries.</p>
+        <form method="GET" action="{{ url_for('get_word_cloud') }}">
+          <button type="submit" class="btn">Generate Word Cloud</button>
+        </form>
+      </section>
+
+      <section id="generate-sentiment" class="card">
+        <h1>Generate Sentiment Score</h1>
+        <p>
+          Analyze sentiment scores from uploaded discussion data to understand
+          user emotions and opinions.
+        </p>
+
+        <form method="POST" action="{{ url_for('generate_sentiment') }}">
+          <button type="submit" class="btn btn-primary">
+            Generate Sentiment
+          </button>
+        </form>
+      </section>
+    </div>
+  </body>
+</html>

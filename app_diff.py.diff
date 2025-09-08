@@ -1,0 +1,98 @@
+@app.route('/generate_sentiment', methods=['POST'])
+def generate_sentiment():
+    if "admin_id" not in session:
+        flash("Access denied!", "danger")
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+    if not conn:
+        flash("Database connection failed", "danger")
+        return redirect(url_for("admin_dashboard"))
+        
+    cursor = conn.cursor()
+
+    # 0. Clear old results
+    try:
+        cursor.execute("DELETE FROM sentiment_score")
+        conn.commit()
+    except Exception as e:
+        print("Error clearing old sentiment results:", e)
+
+    # 1. Fetch all comments
+    cursor.execute("SELECT username, comment, discussion_topic FROM comment")
+    comments = cursor.fetchall()
+
+    if not comments:
+        flash("No comments found for analysis", "warning")
+        cursor.close()
+        conn.close()
+        return redirect(url_for("admin_dashboard"))
+
+    # 2. Convert to DataFrame for easier processing
+    df = pd.DataFrame(comments, columns=['username','comment','discussion_topic'])
+
+    # Clean text
+    df["comment_clean"] = (
+        df["comment"].astype(str)
+        .str.strip()
+        .str.replace(r"\s+", " ", regex=True)
+    )
+    df = df[df["comment_clean"].str.len() > 2].copy()
+
+    # 3. Load HuggingFace pipeline
+    device = 0 if torch.cuda.is_available() else -1
+    sent_pipe = pipeline("sentiment-analysis",
+                         model="distilbert-base-uncased-finetuned-sst-2-english",
+                         device=device,
+                         return_all_scores=True)
+
+    # 4. Run sentiment analysis
+    pos_scores, neg_scores, sentiments, labels = [], [], [], []
+    for comment in df['comment_clean'].tolist():
+        result = sent_pipe(comment[:512])[0]
+        scores = {r['label'].upper(): r['score'] for r in result}
+        pos = scores.get('POSITIVE', 0.0)
+        neg = scores.get('NEGATIVE', 0.0)
+        sentiment = pos - neg
+
+        if abs(pos - neg) < 0.15:
+            label = "NEUTRAL"
+        elif pos > neg:
+            label = "SUPPORT"
+        else:
+            label = "CRITICIZE"
+
+        pos_scores.append(pos)
+        neg_scores.append(neg)
+        sentiments.append(sentiment)
+        labels.append(label)
+
+    df['pos_score'] = pos_scores
+    df['neg_score'] = neg_scores
+    df['sentiment_score'] = sentiments
+    df['label'] = labels
+
+    # 5. Insert results into sentiment_score table
+    insert_query = """
+        INSERT INTO sentiment_score
+        (username, comment, discussion_topic, comment_clean, pos_score, neg_score, sentiment_score, label)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+    """
+    for _, row in df.iterrows():
+        cursor.execute(insert_query, (
+            row['username'],
+            row['comment'],
+            row['discussion_topic'],
+            row['comment_clean'],
+            row['pos_score'],
+            row['neg_score'],
+            row['sentiment_score'],
+            row['label']
+        ))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash("Sentiment analysis completed and saved!", "success")
+    return redirect(url_for("view_sentiment_score"))
